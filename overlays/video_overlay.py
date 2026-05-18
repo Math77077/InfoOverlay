@@ -27,8 +27,8 @@ class VideoOverlay(QWidget):
         self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.view.setFrameShape(QFrame.Shape.NoFrame)
         self.view.setStyleSheet("background: transparent;")
-        self.view.setVerticalScrollBarPolicy(Qt.ScroolBarPolicy.ScrollBarAlwaysOff)
-        self.view.setHorizontalScrollBar(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         # GRAPHICAL SURFACE ITEM THAT ACCEPTS RAW VIDEO FRAMES
         self.video_item = QGraphicsVideoItem()
@@ -103,4 +103,4 @@ class VideoOverlay(QWidget):
         self.update_video_size()
         self.resize_timer.start(300)
         super().resizeEvent(event)
-        
+
