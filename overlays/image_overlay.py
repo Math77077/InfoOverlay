@@ -32,8 +32,9 @@ class ImageOverlay(QWidget):
         # TRIGGER THE INITIAL ASSET TO LOAD
         self.load_best_image()
 
-    def apply_setting(self, parent_window):
+    def apply_settings(self, parent_window):
         parent_window.setStyleSheet("background: transparent;")
+        self.layout.setContentsMargins(0, 0, 16, 16)
 
     def load_best_image(self):
         if not os.path.exists(self.folder_path):
