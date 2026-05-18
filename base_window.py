@@ -1,6 +1,6 @@
 import os
 from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QMenu
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt
 
 class BaseWindow(QWidget):
     """
@@ -48,13 +48,21 @@ class BaseWindow(QWidget):
             new_pos = event.globalPosition().toPoint() - self.drag_anchor
             self.move(new_pos)
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+
     def resizeEvent(self, event):
         super().resizeEvent(event)
         rect = self.rect()
         self.grip.move(rect.width() - self.grip_size, rect.height() - self.grip_size)
 
     def closeEvent(self, event):
-        for window in self.child_windows:
-            window.close()
+        if hasattr(self, 'main_layout') and self.main_layout:
+            for i in range(self.main_layout.count()):
+                widget = self.main_layout.itemAt(i).widget()
+                if widget and hasattr(widget, 'stop_media'):
+                    widget.stop_media()
+
         event.accept()
 
