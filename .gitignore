@@ -5,3 +5,9 @@ env/
 
 # Python Caches
 __pycache__/
+
+# Personal Media Assets
+resources/*.png
+resources/*.jpg
+resources/*.mp4
+resources/*.jpegs
