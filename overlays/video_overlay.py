@@ -39,6 +39,15 @@ class VideoOverlay(QWidget):
         self.media_player = QMediaPlayer(self)
         self.audio_output = QAudioOutput(self)
 
+        # MEMORY STRUCTURES
+        self.landscape_playlist = []
+        self.portrait_playlist = []
+        self.current_idx = 0
+        self.current_video = ""
+
+        # CACHE FILE PATHS
+        self.scan_resources()
+
         # CONECTION BETWEEN ENGINE AND VIDEO/AUDIO OUTPUT
         self.media_player.setVideoOutput(self.video_item)
         self.media_player.setAudioOutput(self.audio_output)
@@ -62,30 +71,35 @@ class VideoOverlay(QWidget):
         self.media_player.stop()
         self.media_player.setSource(QUrl(""))
 
-    def load_best_video(self):
+    def scan_resources(self):
         if not os.path.exists(self.folder_path):
             return
         
-        files = [f for f in os.listdir(self.folder_path) if f.lower().endswith(('.mp4', '.mov'))]
-        if not files: 
-            return
-        
+        self.landscape_playlist = [
+            os.path.abspath(os.path.join(self.folder_path, f))
+            for f in os.listdir(self.folder_path)
+            if f.lower().endswith(('.mp4', '.mov')) and '_h' in f.lower()
+        ]
+
+        self.portrait_playlist = [
+            os.path.abspath(os.path.join(self.folder_path, f))
+            for f in os.listdir(self.folder_path)
+            if f.lower().endswith(('.mp4', '.mov')) and '_v' in f.lower()
+        ]
+
+    def load_best_video(self):
         is_landscape = self.width() >= self.height()
-        target_file = files[0]
+        current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
 
-        for file_name in files:
-            if is_landscape and "_h" in file_name.lower(): 
-                target_file = file_name
-                break
-            if not is_landscape and "_v" in file_name.lower(): 
-                target_file = file_name
-                break
+        if not current_playlist:
+            return
 
-        absolute_path = os.path.abspath(os.path.join(self.folder_path, target_file))
+        safe_idx = self.current_idx % len(current_playlist)
+        target_video = current_playlist[safe_idx]
 
-        if absolute_path != self.current_video:
-            self.current_video = absolute_path
-            self.media_player.setSource(QUrl.fromLocalFile(absolute_path))
+        if target_video != self.current_video:
+            self.current_video = target_video
+            self.media_player.setSource(QUrl.fromLocalFile(target_video))
             self.media_player.play()
 
         self.update_video_size()
@@ -97,7 +111,15 @@ class VideoOverlay(QWidget):
 
     def handle_loop(self, current_state):
         if current_state == QMediaPlayer.PlaybackState.StoppedState and self.current_video != "":
-            self.media_player.play()
+            is_landscape = self.width() >= self.height()
+            current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
+
+            if not current_playlist:
+                return
+            
+            self.current_idx = (self.current_idx + 1) % len(current_playlist)
+
+            self.load_best_video()
 
     def resizeEvent(self, event):
         self.update_video_size()
