@@ -1,4 +1,5 @@
 import os
+import random
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap
@@ -30,6 +31,13 @@ class ImageOverlay(QWidget):
         # CACHE FILE PATHS
         self.scan_resources()
 
+        # RANDOM STARTING POINT
+        total_items = max(len(self.landscape_playlist), len(self.portrait_playlist))
+        if total_items > 0:
+            self.current_idx = random.randint(0, total_items - 1)
+        else:
+            self.current_idx = 0
+
         # PREVENTS HEAVY RE-READING DURING AN ACTIVE WINDOW RESIZE DRAG
         self.check_timer = QTimer(self)
         self.check_timer.setSingleShot(True)
@@ -38,7 +46,7 @@ class ImageOverlay(QWidget):
         # ROTATION TIMER
         self.playlist_timer = QTimer(self)
         self.playlist_timer.timeout.connect(self.advance_playlist)
-        self.playlist_timer.start(30000)
+        self.playlist_timer.start(5000)
 
         # TRIGGER THE INITIAL ASSET TO LOAD
         self.load_best_image()
@@ -62,6 +70,9 @@ class ImageOverlay(QWidget):
             for f in os.listdir(self.folder_path)
             if f.lower().endswith(('.png', '.jpg', '.jpeg')) and "_v" in f.lower()
         ]
+
+        random.shuffle(self.landscape_playlist)
+        random.shuffle(self.portrait_playlist)
 
     def load_best_image(self):
         is_landscape = self.width() >= self.height()

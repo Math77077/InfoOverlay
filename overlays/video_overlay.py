@@ -1,4 +1,5 @@
 import os
+import random
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QFrame
 from PySide6.QtCore import Qt, QTimer, QUrl, QSizeF
 from PySide6.QtGui import QColor
@@ -48,6 +49,13 @@ class VideoOverlay(QWidget):
         # CACHE FILE PATHS
         self.scan_resources()
 
+        # RANDOM STARTING POINT
+        total_items = max(len(self.landscape_playlist), len(self.portrait_playlist))
+        if total_items > 0:
+            self.current_idx = random.randint(0, total_items - 1)
+        else:
+            self.current_idx = 0
+
         # CONECTION BETWEEN ENGINE AND VIDEO/AUDIO OUTPUT
         self.media_player.setVideoOutput(self.video_item)
         self.media_player.setAudioOutput(self.audio_output)
@@ -86,6 +94,9 @@ class VideoOverlay(QWidget):
             for f in os.listdir(self.folder_path)
             if f.lower().endswith(('.mp4', '.mov')) and '_v' in f.lower()
         ]
+
+        random.shuffle(self.landscape_playlist)
+        random.shuffle(self.portrait_playlist)
 
     def load_best_video(self):
         is_landscape = self.width() >= self.height()
