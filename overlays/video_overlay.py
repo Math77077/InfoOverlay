@@ -1,8 +1,8 @@
 import os
 import random
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QFrame
-from PySide6.QtCore import Qt, QTimer, QUrl, QSizeF
-from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QFrame, QPushButton, QApplication
+from PySide6.QtCore import Qt, QTimer, QUrl, QSizeF, QSize
+from PySide6.QtGui import QIcon
 from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
 from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
 
@@ -11,10 +11,14 @@ class VideoOverlay(QWidget):
     Manages a hardware-accelerated video player.
     Uses QGraphicsView to maintain alpha transparency channels on Linux desktop environments.
     """
+    # TRACKER REGISTRY FOR ALL ACTIVE VIDEO WIDGETS ACROSS ALL WINDOWS
+    _instances = []
+
     def __init__(self, folder_path):
         super().__init__()
         self.folder_path = folder_path
         self.current_video = ""
+        VideoOverlay._instances.append(self)
 
         # BASE LAYOUT SETUP
         self.layout = QVBoxLayout(self)
@@ -24,8 +28,8 @@ class VideoOverlay(QWidget):
         self.scene = QGraphicsScene(self)
         self.view = QGraphicsView(self.scene)
 
-        # IGNORE MOUSE INTERACTIONS AS SO IT REACHES THE BASEWINDOW
-        self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        # ALLOW MOUSE INTERACTION ONLY FOR FLOATING BUTTON INTERACTION
+        self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.view.setFrameShape(QFrame.Shape.NoFrame)
         self.view.setStyleSheet("background: transparent;")
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -40,11 +44,21 @@ class VideoOverlay(QWidget):
         self.media_player = QMediaPlayer(self)
         self.audio_output = QAudioOutput(self)
 
+        # EXCLUSIVE FOCUS
+        self.audio_output.setMuted(True)
+
+        # VISUAL AUDIO TOGGLE BUTTON
+        self.audio_btn = QPushButton(self)
+        self.audio_btn.setCheckable(True)
+        self.audio_btn.resize(32, 32)
+        self.update_button_style()
+        self.audio_btn.clicked.connect(self.toggle_audio_state)
+        self.audio_btn.hide()
+
         # MEMORY STRUCTURES
         self.landscape_playlist = []
         self.portrait_playlist = []
         self.current_idx = 0
-        self.current_video = ""
 
         # CACHE FILE PATHS
         self.scan_resources()
@@ -78,6 +92,8 @@ class VideoOverlay(QWidget):
     def stop_media(self):
         self.media_player.stop()
         self.media_player.setSource(QUrl(""))
+        if self in VideoOverlay._instances:
+            VideoOverlay._instances.remove(self)
 
     def scan_resources(self):
         if not os.path.exists(self.folder_path):
@@ -120,6 +136,65 @@ class VideoOverlay(QWidget):
         self.video_item.setSize(QSizeF(current_size.width(), current_size.height()))
         self.view.setSceneRect(0, 0, current_size.width(), current_size.height())
 
+        btn_w = self.audio_btn.width()
+        btn_h = self.audio_btn.height()
+        center_x = (current_size.width() - btn_w) // 2
+        center_y = (current_size.height() - btn_h) // 2
+
+        self.audio_btn.move(center_x, center_y)
+        self.audio_btn.raise_()
+
+    def enterEvent(self, event):
+        self.audio_btn.show()
+        self.audio_btn.raise_()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self.audio_btn.hide()
+        super().leaveEvent(event)
+
+    def toggle_audio_state(self, checked):
+        if checked:
+            self.claim_audio_focus()
+        else:
+            self.audio_output.setMuted(True)
+            self.update_button_style()
+
+    def claim_audio_focus(self):
+        for overlay in VideoOverlay._instances:
+            if overlay != self:
+                overlay.audio_output.setMuted(True)
+                overlay.audio_btn.setChecked(False)
+                overlay.update_button_style()
+
+        self.audio_output.setMuted(False)
+        self.update_button_style()
+
+    def update_button_style(self):
+        if self.audio_btn.isChecked():
+            icon_path = "app_assets/volume_on.svg"
+            bg_color = "rgba(5, 110, 155, 0.85)"
+            border_color = "#056e9b"
+        else:
+            icon_path = "app_assets/volume_muted.svg"
+            bg_color = "rgba(31, 40, 51, 0.6)"
+            border_color = "rgba(255, 255, 255, 30)"
+
+        self.audio_btn.setIcon(QIcon(icon_path))
+        self.audio_btn.setIconSize(QSize(32, 32))
+        self.audio_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {bg_color};
+                border: 1px solid {border_color};
+                border-radius: 6px;
+                padding: 4px;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(69, 156, 214, 0.9);
+                border: 1px solid #459cd6;
+            }}
+        """)
+
     def handle_loop(self, current_state):
         if current_state == QMediaPlayer.PlaybackState.StoppedState and self.current_video != "":
             is_landscape = self.width() >= self.height()
@@ -136,4 +211,8 @@ class VideoOverlay(QWidget):
         self.update_video_size()
         self.resize_timer.start(300)
         super().resizeEvent(event)
+
+    def closeEvent(self, event):
+        self.stop_media()
+        super().closeEvent(event)
 
