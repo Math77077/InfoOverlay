@@ -32,7 +32,16 @@ class BaseWindow(QWidget):
         self.grip_size = 16
         self.grip = QSizeGrip(self)
         self.grip.resize(self.grip_size, self.grip_size)
-        self.grip.setStyleSheet("background-color: rgba(255, 255, 255, 30); border-radius: 8px;")
+
+        asset_path = "app_assets/grip_chevron.svg"
+        self.grip.setStyleSheet(f"""
+            QSizeGrip {{
+                background-image: url("{asset_path}");
+                background-position: center;
+                background-repeat: no-repeat;
+                background-color: transparent;
+            }}
+        """)
 
     def show_context_options(self, global_pos):
         pass

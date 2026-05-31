@@ -53,7 +53,7 @@ class ImageOverlay(QWidget):
 
     def apply_settings(self, parent_window):
         parent_window.setStyleSheet("background: transparent;")
-        self.layout.setContentsMargins(0, 0, 16, 16)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
     def scan_resources(self):
         if not os.path.exists(self.folder_path):
