@@ -1,5 +1,5 @@
 import os
-from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QMenu
+from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout
 from PySide6.QtCore import Qt
 
 class BaseWindow(QWidget):
@@ -32,16 +32,25 @@ class BaseWindow(QWidget):
         self.grip_size = 16
         self.grip = QSizeGrip(self)
         self.grip.resize(self.grip_size, self.grip_size)
-        self.grip.setStyleSheet("background-color: rgba(255, 255, 255, 30); border-radius: 8px;")
 
-        # INIT CONTEXT MENU PLACEHOLDER
-        self.context_menu = QMenu(self)
+        asset_path = "app_assets/grip_chevron.svg"
+        self.grip.setStyleSheet(f"""
+            QSizeGrip {{
+                background-image: url("{asset_path}");
+                background-position: center;
+                background-repeat: no-repeat;
+                background-color: transparent;
+            }}
+        """)
+
+    def show_context_options(self, global_pos):
+        pass
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_anchor = event.position().toPoint()
         elif event.button() == Qt.MouseButton.RightButton:
-            self.context_menu.exec(event.globalPosition().toPoint())
+            self.show_context_options(event.globalPosition().toPoint())
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
