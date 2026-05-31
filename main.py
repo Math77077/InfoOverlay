@@ -3,7 +3,7 @@ import os
 
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 
@@ -25,35 +25,63 @@ class AppController(BaseWindow):
         self.assets_folder = "resources"
 
         # BUILD CONTROLLER INTERFACE
+        self.main_menu = QMenu(self)
+        self.main_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setup_context_menu()
+
+        self.main_menu.setStyleSheet("""
+        QMenu {
+            background-color: rgba(31, 40, 51, 0.95);  
+            border: 1px solid rgba(69, 156, 214, 0.5); 
+            border-radius: 8px;                       
+            padding: 5px 0px;
+        }
+        QMenu::item {
+            color: #c5a3a3; 
+            padding: 8px 24px;                       
+            background-color: transparent;
+        }
+        QMenu::item:selected {
+            background-color: rgb(5, 110, 155);       
+            color: white;                             
+        }
+        QMenu::separator {
+            height: 1px;
+            background-color: rgba(255, 255, 255, 30);
+            margin: 4px 10px;                        
+        }    
+        """)
 
         # DEFAULT PREVIEW MODE
         self.switch_mode(PreviewOverlay)
+    
+    def show_context_options(self, global_pos):
+        self.main_menu.exec(global_pos)
 
     def setup_context_menu(self):
         new_window_action = QAction("Nova Janela", self)
         new_window_action.triggered.connect(self.spawn_new_window)
-        self.context_menu.addAction(new_window_action)
+        self.main_menu.addAction(new_window_action)
 
-        self.context_menu.addSeparator()
+        self.main_menu.addSeparator()
 
         text_action = QAction("Letreiro", self)
         text_action.triggered.connect(lambda: self.switch_mode(ScrollingTextOverlay, self.width()))
-        self.context_menu.addAction(text_action)
+        self.main_menu.addAction(text_action)
 
         image_action = QAction("Modo Imagem", self)
         image_action.triggered.connect(lambda: self.switch_mode(ImageOverlay, self.assets_folder))
-        self.context_menu.addAction(image_action)
+        self.main_menu.addAction(image_action)
 
         video_action = QAction("Modo Vídeo", self)
         video_action.triggered.connect(lambda: self.switch_mode(VideoOverlay, self.assets_folder))
-        self.context_menu.addAction(video_action)
+        self.main_menu.addAction(video_action)
 
-        self.context_menu.addSeparator()
+        self.main_menu.addSeparator()
 
         exit_action = QAction("Sair", self)
         exit_action.triggered.connect(self.close)
-        self.context_menu.addAction(exit_action)
+        self.main_menu.addAction(exit_action)
 
     def clear_current_content(self):
         if self.current_content:
