@@ -1,5 +1,3 @@
-import os
-import random
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QGraphicsScene, QGraphicsView, QFrame, QPushButton, QApplication
 from PySide6.QtCore import Qt, QTimer, QUrl, QSizeF, QSize
 from PySide6.QtGui import QIcon
@@ -14,9 +12,9 @@ class VideoOverlay(QWidget):
     # TRACKER REGISTRY FOR ALL ACTIVE VIDEO WIDGETS ACROSS ALL WINDOWS
     _instances = []
 
-    def __init__(self, folder_path):
+    def __init__(self, asset_service):
         super().__init__()
-        self.folder_path = folder_path
+        self.asset_service = asset_service
         self.current_video = ""
         VideoOverlay._instances.append(self)
 
@@ -55,27 +53,17 @@ class VideoOverlay(QWidget):
         self.audio_btn.clicked.connect(self.toggle_audio_state)
         self.audio_btn.hide()
 
-        # MEMORY STRUCTURES
-        self.landscape_playlist = []
-        self.portrait_playlist = []
+        # RUNTIME STATES
         self.current_idx = 0
-
-        # CACHE FILE PATHS
-        self.scan_resources()
-
-        # RANDOM STARTING POINT
-        total_items = max(len(self.landscape_playlist), len(self.portrait_playlist))
-        if total_items > 0:
-            self.current_idx = random.randint(0, total_items - 1)
-        else:
-            self.current_idx = 0
+        self.local_playlist = []
+        self.current_orientation = ""
 
         # CONECTION BETWEEN ENGINE AND VIDEO/AUDIO OUTPUT
         self.media_player.setVideoOutput(self.video_item)
         self.media_player.setAudioOutput(self.audio_output)
 
         # WATCH THE VIDEO STATE, SO WHEN IT ENDS THE LOOP STARTS AGAIN
-        self.media_player.playbackStateChanged.connect(self.handle_loop)
+        self.media_player.mediaStatusChanged.connect(self.handle_loop)
 
         # RESIZE MANAGEMENT
         self.resize_timer = QTimer(self)
@@ -95,34 +83,20 @@ class VideoOverlay(QWidget):
         if self in VideoOverlay._instances:
             VideoOverlay._instances.remove(self)
 
-    def scan_resources(self):
-        if not os.path.exists(self.folder_path):
-            return
-        
-        self.landscape_playlist = [
-            os.path.abspath(os.path.join(self.folder_path, f))
-            for f in os.listdir(self.folder_path)
-            if f.lower().endswith(('.mp4', '.mov')) and '_h' in f.lower()
-        ]
-
-        self.portrait_playlist = [
-            os.path.abspath(os.path.join(self.folder_path, f))
-            for f in os.listdir(self.folder_path)
-            if f.lower().endswith(('.mp4', '.mov')) and '_v' in f.lower()
-        ]
-
-        random.shuffle(self.landscape_playlist)
-        random.shuffle(self.portrait_playlist)
-
     def load_best_video(self):
         is_landscape = self.width() >= self.height()
-        current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
+        orientation = "horizontal" if is_landscape else "vertical"
 
-        if not current_playlist:
+        if orientation != self.current_orientation or not self.local_playlist:
+            self.current_orientation = orientation
+            self.local_playlist = self.asset_service.get_video_playlist(orientation)
+            self.current_idx = 0
+
+        if not self.local_playlist:
             return
 
-        safe_idx = self.current_idx % len(current_playlist)
-        target_video = current_playlist[safe_idx]
+        safe_idx = self.current_idx % len(self.local_playlist)
+        target_video = self.local_playlist[safe_idx]
 
         if target_video != self.current_video:
             self.current_video = target_video
@@ -172,11 +146,11 @@ class VideoOverlay(QWidget):
 
     def update_button_style(self):
         if self.audio_btn.isChecked():
-            icon_path = "app_assets/volume_on.svg"
+            icon_path = self.asset_service.get_asset_path("volume_on.svg")
             bg_color = "rgba(5, 110, 155, 0.85)"
             border_color = "#056e9b"
         else:
-            icon_path = "app_assets/volume_muted.svg"
+            icon_path = self.asset_service.get_asset_path("volume_muted.svg")
             bg_color = "rgba(31, 40, 51, 0.6)"
             border_color = "rgba(255, 255, 255, 30)"
 
@@ -195,17 +169,13 @@ class VideoOverlay(QWidget):
             }}
         """)
 
-    def handle_loop(self, current_state):
-        if current_state == QMediaPlayer.PlaybackState.StoppedState and self.current_video != "":
-            is_landscape = self.width() >= self.height()
-            current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
-
-            if not current_playlist:
+    def handle_loop(self, status):
+        if status == QMediaPlayer.MediaStatus.EndOfMedia and self.current_video != "":
+            if not self.local_playlist:
                 return
             
-            self.current_idx = (self.current_idx + 1) % len(current_playlist)
-
-            self.load_best_video()
+            self.current_idx = (self.current_idx + 1) % len(self.local_playlist)
+            QTimer.singleShot(100, self.load_best_video)
 
     def resizeEvent(self, event):
         self.update_video_size()
