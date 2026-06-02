@@ -100,10 +100,15 @@ class AppController(BaseWindow):
         self.current_content = overlay_class(*args)
         self.main_layout.addWidget(self.current_content)
         self.current_content.apply_settings(self)
+
+        self.layout().activate()
+
         self.grip.raise_()
+        self.grip.update()
 
     def spawn_new_window(self):
         new_window = AppController()
+        new_window.asset_service = self.asset_service
         self.child_windows.append(new_window)
         new_window.show()
 
