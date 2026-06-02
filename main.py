@@ -1,7 +1,8 @@
 import sys
 import os
-
-os.environ["QT_QPA_PLATFORM"] = "xcb"
+import platform
+if platform.system() == "Linux":
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt
@@ -21,7 +22,8 @@ class AppController(BaseWindow):
     """
 
     def __init__(self):
-        super().__init__()
+        self.asset_service = AssetService()
+        super().__init__(self.asset_service)
         self.current_content = None
         self.asset_service = AssetService()
 
@@ -54,7 +56,7 @@ class AppController(BaseWindow):
         """)
 
         # DEFAULT PREVIEW MODE
-        self.switch_mode(PreviewOverlay)
+        self.switch_mode(PreviewOverlay, self.asset_service)
     
     def show_context_options(self, global_pos):
         self.main_menu.exec(global_pos)
@@ -98,10 +100,15 @@ class AppController(BaseWindow):
         self.current_content = overlay_class(*args)
         self.main_layout.addWidget(self.current_content)
         self.current_content.apply_settings(self)
+
+        self.layout().activate()
+
         self.grip.raise_()
+        self.grip.update()
 
     def spawn_new_window(self):
         new_window = AppController()
+        new_window.asset_service = self.asset_service
         self.child_windows.append(new_window)
         new_window.show()
 

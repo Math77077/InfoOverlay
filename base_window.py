@@ -1,13 +1,13 @@
-import os
-from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QApplication
 from PySide6.QtCore import Qt
 
 class BaseWindow(QWidget):
     """
     Window lifecycle, frameless movement, resizing grip, and the right-click global context menu frame.
     """
-    def __init__(self):
+    def __init__(self, asset_service):
         super().__init__()
+        self.asset_service = asset_service
         self.child_windows = []
         self.drag_anchor = None
 
@@ -33,10 +33,10 @@ class BaseWindow(QWidget):
         self.grip = QSizeGrip(self)
         self.grip.resize(self.grip_size, self.grip_size)
 
-        asset_path = "app_assets/grip_chevron.svg"
+        asset_path = self.asset_service.get_asset_path("grip_chevron.svg").replace("\\", "/")
         self.grip.setStyleSheet(f"""
             QSizeGrip {{
-                background-image: url("{asset_path}");
+                image: url("{asset_path}");
                 background-position: center;
                 background-repeat: no-repeat;
                 background-color: transparent;
@@ -54,8 +54,18 @@ class BaseWindow(QWidget):
 
     def mouseMoveEvent(self, event):
         if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
-            new_pos = event.globalPosition().toPoint() - self.drag_anchor
-            self.move(new_pos)
+            global_pos_pixel = event.globalPosition().toPoint()
+            target_pos = global_pos_pixel - self.drag_anchor
+
+            current_screen = QApplication.screenAt(global_pos_pixel)
+            
+            if current_screen:
+                screen_geo = current_screen.geometry()
+                clamped_x = max(screen_geo.left(), min(target_pos.x(), screen_geo.right() - self.width()))
+                clamped_y = max(screen_geo.top(), min(target_pos.y(), screen_geo.bottom() - self.height()))
+                self.move(clamped_x, clamped_y)
+            else:
+                self.move(target_pos)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
@@ -65,6 +75,7 @@ class BaseWindow(QWidget):
         super().resizeEvent(event)
         rect = self.rect()
         self.grip.move(rect.width() - self.grip_size, rect.height() - self.grip_size)
+        self.grip.raise_()
 
     def closeEvent(self, event):
         if hasattr(self, 'main_layout') and self.main_layout:
