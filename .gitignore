@@ -7,7 +7,7 @@ env/
 __pycache__/
 
 # Personal Media Assets
-resources/*.png
-resources/*.jpg
-resources/*.mp4
-resources/*.jpegs
+resources/images/*.png
+resources/images/*.jpg
+resources/videos/*.mp4
+resources/images/*.jpegs
