@@ -1,7 +1,8 @@
 import sys
 import os
-
-os.environ["QT_QPA_PLATFORM"] = "xcb"
+import platform
+if platform.system() == "Linux":
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt
