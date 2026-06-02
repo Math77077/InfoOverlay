@@ -1,5 +1,3 @@
-import os
-import random
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPixmap
@@ -9,9 +7,9 @@ class ImageOverlay(QWidget):
     Manages loading and displaying images dynamically.
     Detects window orientation and swaps between horizontal (_h) and vertical (_v) files.
     """
-    def __init__(self, folder_path):
+    def __init__(self, asset_service):
         super().__init__()
-        self.folder_path = folder_path
+        self.asset_service = asset_service
 
         # SETUP VERTICAL LAYOUT
         self.layout = QVBoxLayout(self)
@@ -24,18 +22,11 @@ class ImageOverlay(QWidget):
 
         # MEMORY STRUCTURES
         self.pixmap = None
-        self.landscape_playlist = []
-        self.portrait_playlist = []
         self.current_idx = 0
 
-        # CACHE FILE PATHS
-        self.scan_resources()
-
         # RANDOM STARTING POINT
-        total_items = max(len(self.landscape_playlist), len(self.portrait_playlist))
-        if total_items > 0:
-            self.current_idx = random.randint(0, total_items - 1)
-        else:
+        startup_playlist = self.asset_service.get_image_playlist("horizontal")
+        if startup_playlist:
             self.current_idx = 0
 
         # PREVENTS HEAVY RE-READING DURING AN ACTIVE WINDOW RESIZE DRAG
@@ -55,32 +46,15 @@ class ImageOverlay(QWidget):
         parent_window.setStyleSheet("background: transparent;")
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-    def scan_resources(self):
-        if not os.path.exists(self.folder_path):
-            return
-        
-        self.landscape_playlist = [
-            os.path.join(self.folder_path, f)
-            for f in os.listdir(self.folder_path)
-            if f.lower().endswith(('.png', '.jpg', '.jpeg')) and "_h" in f.lower()
-        ]
-
-        self.portrait_playlist = [
-            os.path.join(self.folder_path, f)
-            for f in os.listdir(self.folder_path)
-            if f.lower().endswith(('.png', '.jpg', '.jpeg')) and "_v" in f.lower()
-        ]
-
-        random.shuffle(self.landscape_playlist)
-        random.shuffle(self.portrait_playlist)
-
     def load_best_image(self):
         is_landscape = self.width() >= self.height()
-        current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
+        orientation = "horizontal" if is_landscape else "vertical"
+
+        current_playlist = self.asset_service.get_image_playlist(orientation)
 
         if not current_playlist:
             return
-        
+
         safe_idx = self.current_idx % len(current_playlist)
         chosen_path = current_playlist[safe_idx]
         
@@ -89,7 +63,9 @@ class ImageOverlay(QWidget):
 
     def advance_playlist(self):
         is_landscape = self.width() >= self.height()
-        current_playlist = self.landscape_playlist if is_landscape else self.portrait_playlist
+        orientation = "horizontal" if is_landscape else "vertical"
+
+        current_playlist = self.asset_service.get_image_playlist(orientation)
 
         if not current_playlist:
             return

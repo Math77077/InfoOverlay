@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction
 
+from asset_service import AssetService
 from base_window import BaseWindow
 from overlays.text_overlay import ScrollingTextOverlay
 from overlays.image_overlay import ImageOverlay
@@ -22,7 +23,7 @@ class AppController(BaseWindow):
     def __init__(self):
         super().__init__()
         self.current_content = None
-        self.assets_folder = "resources"
+        self.asset_service = AssetService()
 
         # BUILD CONTROLLER INTERFACE
         self.main_menu = QMenu(self)
@@ -70,11 +71,11 @@ class AppController(BaseWindow):
         self.main_menu.addAction(text_action)
 
         image_action = QAction("Modo Imagem", self)
-        image_action.triggered.connect(lambda: self.switch_mode(ImageOverlay, self.assets_folder))
+        image_action.triggered.connect(lambda: self.switch_mode(ImageOverlay, self.asset_service))
         self.main_menu.addAction(image_action)
 
         video_action = QAction("Modo Vídeo", self)
-        video_action.triggered.connect(lambda: self.switch_mode(VideoOverlay, self.assets_folder))
+        video_action.triggered.connect(lambda: self.switch_mode(VideoOverlay, self.asset_service))
         self.main_menu.addAction(video_action)
 
         self.main_menu.addSeparator()
