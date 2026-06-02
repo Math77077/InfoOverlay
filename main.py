@@ -22,7 +22,8 @@ class AppController(BaseWindow):
     """
 
     def __init__(self):
-        super().__init__()
+        self.asset_service = AssetService()
+        super().__init__(self.asset_service)
         self.current_content = None
         self.asset_service = AssetService()
 
@@ -55,7 +56,7 @@ class AppController(BaseWindow):
         """)
 
         # DEFAULT PREVIEW MODE
-        self.switch_mode(PreviewOverlay)
+        self.switch_mode(PreviewOverlay, self.asset_service)
     
     def show_context_options(self, global_pos):
         self.main_menu.exec(global_pos)

@@ -6,8 +6,9 @@ class BaseWindow(QWidget):
     """
     Window lifecycle, frameless movement, resizing grip, and the right-click global context menu frame.
     """
-    def __init__(self):
+    def __init__(self, asset_service):
         super().__init__()
+        self.asset_service = asset_service
         self.child_windows = []
         self.drag_anchor = None
 
@@ -33,7 +34,7 @@ class BaseWindow(QWidget):
         self.grip = QSizeGrip(self)
         self.grip.resize(self.grip_size, self.grip_size)
 
-        asset_path = "app_assets/grip_chevron.svg"
+        asset_path = self.asset_service.get_asset_path("grip_chevron.svg")
         self.grip.setStyleSheet(f"""
             QSizeGrip {{
                 background-image: url("{asset_path}");

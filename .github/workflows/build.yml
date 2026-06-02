@@ -27,7 +27,7 @@ jobs:
 
       - name: Run PyInstaller Compiler
         run: |
-          pyinstaller --noconsole --name="UBS_Signage" main.py
+          pyinstaller --noconsole --name="UBS_Signage" --add-data "app_assets;app_assets" main.py
 
       - name: Create External Portable Resource Folders
         run: |

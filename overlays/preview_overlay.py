@@ -8,11 +8,13 @@ class PreviewOverlay(QWidget):
     Acts as a visual placeholder.
     Renders a semi-transparent, stylish geometric guide box so the user can reposition/resize the window cleanly.
     """
-    def __init__(self):
+    def __init__(self, asset_service):
         super().__init__()
+        self.asset_service = asset_service
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
 
-        self.logo_renderer = QSvgRenderer("app_assets/logo.svg")
+        logo_path = self.asset_service.get_asset_path("logo.svg")
+        self.logo_renderer = QSvgRenderer(logo_path)
         self.grid_spacing = 40
 
         # LAYOUT SETUP
