@@ -23,12 +23,6 @@ class PreviewOverlay(QWidget):
 
     def apply_settings(self, parent_window):
         parent_window.setStyleSheet("""
-            BaseWindow {
-                background-color: transparent;
-            }
-        """)
-        
-        self.setStyleSheet("""
             PreviewOverlay {
                 background-color: rgba(69, 156, 214, 0.65); 
                 border: 2px dashed #056e9b;             

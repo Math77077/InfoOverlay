@@ -29,7 +29,7 @@ class VideoOverlay(QWidget):
         # ALLOW MOUSE INTERACTION ONLY FOR FLOATING BUTTON INTERACTION
         self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.view.setFrameShape(QFrame.Shape.NoFrame)
-        self.view.setStyleSheet("background: transparent; background-color: transparent;")
+        self.view.setStyleSheet("background: transparent;")
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -93,8 +93,8 @@ class VideoOverlay(QWidget):
         QTimer.singleShot(200, self.load_best_video)
 
     def apply_settings(self, parent_window):
+        parent_window.setStyleSheet("background: transparent; border: none;")
         parent_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        parent_window.setStyleSheet("BaseWindow { background-color: rgba(0, 0, 0, 1); border: none; }")
 
     def stop_media(self):
         self.media_player.stop()
@@ -231,12 +231,8 @@ class VideoOverlay(QWidget):
             if not self.local_playlist:
                 return
             
-            if len(self.local_playlist) == 1:
-                self.media_player.setPosition(0)
-                self.media_player.play()
-            else:
-                self.current_idx = (self.current_idx + 1) % len(self.local_playlist)
-                QTimer.singleShot(100, self.load_best_video)
+            self.current_idx = (self.current_idx + 1) % len(self.local_playlist)
+            QTimer.singleShot(100, self.load_best_video)
 
     def resizeEvent(self, event):
         self.update_video_size()

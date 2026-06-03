@@ -1,10 +1,5 @@
-import platform
 from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QApplication
-from PySide6.QtCore import Qt, QEvent
-
-if platform.system() == "Windows":
-    import ctypes
-    import ctypes.wintypes
+from PySide6.QtCore import Qt, QEvent, QPoint
 
 class BaseWindow(QWidget):
     """
@@ -29,13 +24,6 @@ class BaseWindow(QWidget):
         self.resize(1000, 300)
         self.setMinimumSize(50, 50)
 
-        self.setStyleSheet("""
-            !BaseWindow {
-                background-color: rgba(0, 0, 0, 1);
-                border: none;
-            }
-        """)
-
         # BASE LAYOUT
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -58,33 +46,30 @@ class BaseWindow(QWidget):
         if child_widget:
             child_widget.installEventFilter(self)
 
-    def nativeEvent(self, eventType, message):
-        if platform.system() == "Windows" and eventType == b"windows_generic_MSG":
-            msg = ctypes.wintypes.MSG.from_address(int(message))
-            if msg.message == 0x0084:
-                result, data = super().nativeEvent(eventType, message)
-                
-                if data == 17:
-                    return result, data
-                    
-                return True, 2
-        return super().nativeEvent(eventType, message)
-
     def eventFilter(self, watched, event):
         if event.type() == QEvent.Type.MouseButtonPress:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.drag_anchor = event.globalPosition().toPoint() - self.pos()
+                return False  
             elif event.button() == Qt.MouseButton.RightButton:
                 self.show_context_options(event.globalPosition().toPoint())
                 return True
-                
+            
         elif event.type() == QEvent.Type.MouseMove:
-            if platform.system() != "Windows":
-                if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
-                    global_pos = event.globalPosition().toPoint()
-                    self.execute_clamped_move(global_pos)
-                    return True
+            if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
+                global_pos = event.globalPosition().toPoint()
+                target_pos = global_pos - self.drag_anchor
                 
+                current_screen = QApplication.screenAt(global_pos)
+                if current_screen:
+                    screen_geo = current_screen.geometry()
+                    clamped_x = max(screen_geo.left(), min(target_pos.x(), screen_geo.right() - self.width()))
+                    clamped_y = max(screen_geo.top(), min(target_pos.y(), screen_geo.bottom() - self.height()))
+                    self.move(clamped_x, clamped_y)
+                else:
+                    self.move(target_pos)
+                return True
+            
         elif event.type() == QEvent.Type.MouseButtonRelease:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.drag_anchor = None

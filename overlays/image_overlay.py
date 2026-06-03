@@ -43,7 +43,7 @@ class ImageOverlay(QWidget):
         self.load_best_image()
 
     def apply_settings(self, parent_window):
-        parent_window.setStyleSheet("background: transparent; border: none;")
+        parent_window.setStyleSheet("background: transparent;")
         self.layout.setContentsMargins(0, 0, 0, 0)
 
     def load_best_image(self):
