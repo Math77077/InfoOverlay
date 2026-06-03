@@ -24,6 +24,13 @@ class BaseWindow(QWidget):
         self.resize(1000, 300)
         self.setMinimumSize(50, 50)
 
+        self.setStyleSheet("""
+            !BaseWindow {
+                background-color: rgba(0, 0, 0, 1);
+                border: none;
+            }
+        """)
+
         # BASE LAYOUT
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
@@ -50,7 +57,6 @@ class BaseWindow(QWidget):
         if event.type() == QEvent.Type.MouseButtonPress:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.drag_anchor = event.globalPosition().toPoint() - self.pos()
-                return True  
             elif event.button() == Qt.MouseButton.RightButton:
                 self.show_context_options(event.globalPosition().toPoint())
                 return True
@@ -64,7 +70,6 @@ class BaseWindow(QWidget):
         elif event.type() == QEvent.Type.MouseButtonRelease:
             if event.button() == Qt.MouseButton.LeftButton:
                 self.drag_anchor = None
-                return True
 
         return super().eventFilter(watched, event)
     

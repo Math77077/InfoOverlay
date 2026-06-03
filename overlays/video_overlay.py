@@ -31,10 +31,7 @@ class VideoOverlay(QWidget):
         # ALLOW MOUSE INTERACTION ONLY FOR FLOATING BUTTON INTERACTION
         self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.view.setFrameShape(QFrame.Shape.NoFrame)
-        if platform.system() == "Windows":
-            self.view.setStyleSheet("background-color: rgb(0, 0, 0);")
-        else:
-            self.view.setStyleSheet("background: transparent;")
+        self.view.setStyleSheet("background: transparent; background-color: transparent;")
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
@@ -98,12 +95,8 @@ class VideoOverlay(QWidget):
         QTimer.singleShot(200, self.load_best_video)
 
     def apply_settings(self, parent_window):
-        if platform.system() == "Windows":
-            parent_window.setStyleSheet("BaseWindow { background-color: rgb(0, 0, 0); border: none; }")
-            parent_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        else:
-            parent_window.setStyleSheet("BaseWindow { background: transparent; border: none; }")
-            parent_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        parent_window.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        parent_window.setStyleSheet("BaseWindow { background-color: rgba(0, 0, 0, 1); border: none; }")
 
     def stop_media(self):
         self.media_player.stop()
