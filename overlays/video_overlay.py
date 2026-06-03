@@ -1,5 +1,3 @@
-import platform
-
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout,  QGraphicsScene, QGraphicsView, QFrame, QPushButton, QSlider
 from PySide6.QtCore import Qt, QTimer, QUrl, QSizeF, QSize
 from PySide6.QtGui import QIcon
@@ -233,8 +231,12 @@ class VideoOverlay(QWidget):
             if not self.local_playlist:
                 return
             
-            self.current_idx = (self.current_idx + 1) % len(self.local_playlist)
-            QTimer.singleShot(100, self.load_best_video)
+            if len(self.local_playlist) == 1:
+                self.media_player.setPosition(0)
+                self.media_player.play()
+            else:
+                self.current_idx = (self.current_idx + 1) % len(self.local_playlist)
+                QTimer.singleShot(100, self.load_best_video)
 
     def resizeEvent(self, event):
         self.update_video_size()

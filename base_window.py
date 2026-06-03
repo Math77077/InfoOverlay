@@ -1,5 +1,10 @@
+import platform
 from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QApplication
-from PySide6.QtCore import Qt, QEvent, QPoint
+from PySide6.QtCore import Qt, QEvent
+
+if platform.system() == "Windows":
+    import ctypes
+    from os import winmode
 
 class BaseWindow(QWidget):
     """
@@ -53,6 +58,18 @@ class BaseWindow(QWidget):
         if child_widget:
             child_widget.installEventFilter(self)
 
+    def nativeEvent(self, eventType, message):
+        if platform.system() == "Windows" and eventType == b"windows_generic_MSG":
+            msg = ctypes.wintypes.MSG.from_address(int(message))
+            if msg.message == 0x0084:
+                result, data = super().nativeEvent(eventType, message)
+                
+                if data == 17:
+                    return result, data
+                    
+                return True, 2
+        return super().nativeEvent(eventType, message)
+
     def eventFilter(self, watched, event):
         if event.type() == QEvent.Type.MouseButtonPress:
             if event.button() == Qt.MouseButton.LeftButton:
@@ -62,10 +79,11 @@ class BaseWindow(QWidget):
                 return True
                 
         elif event.type() == QEvent.Type.MouseMove:
-            if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
-                global_pos = event.globalPosition().toPoint()
-                self.execute_clamped_move(global_pos)
-                return True
+            if platform.system() != "Windows":
+                if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
+                    global_pos = event.globalPosition().toPoint()
+                    self.execute_clamped_move(global_pos)
+                    return True
                 
         elif event.type() == QEvent.Type.MouseButtonRelease:
             if event.button() == Qt.MouseButton.LeftButton:
