@@ -116,7 +116,12 @@ class ScrollingTextOverlay(QWidget):
         self.timer.start(20)
 
     def apply_settings(self, parent_window):
-        parent_window.setStyleSheet("background: transparent; border: none;")
+        parent_window.setStyleSheet("""
+            BaseWindow {
+                background-color: rgba(0, 0, 0, 1);
+                border: none;
+            }
+        """)
 
     def update_label_style(self):
         self.label.setStyleSheet(f"color: {self.current_color}; background: transparent;")
