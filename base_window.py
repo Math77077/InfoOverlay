@@ -4,7 +4,7 @@ from PySide6.QtCore import Qt, QEvent
 
 if platform.system() == "Windows":
     import ctypes
-    from os import winmode
+    import ctypes.wintypes
 
 class BaseWindow(QWidget):
     """
