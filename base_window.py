@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QApplication
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent, QPoint
 
 class BaseWindow(QWidget):
     """
@@ -42,13 +42,58 @@ class BaseWindow(QWidget):
                 background-color: transparent;
             }}
         """)
+    def register_child_events(self, child_widget):
+        if child_widget:
+            child_widget.installEventFilter(self)
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.MouseButtonPress:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.drag_anchor = event.globalPosition().toPoint() - self.pos()
+                return False  
+            elif event.button() == Qt.MouseButton.RightButton:
+                self.show_context_options(event.globalPosition().toPoint())
+                return True
+            
+        elif event.type() == QEvent.Type.MouseMove:
+            if event.buttons() & Qt.MouseButton.LeftButton and self.drag_anchor:
+                global_pos = event.globalPosition().toPoint()
+                target_pos = global_pos - self.drag_anchor
+                
+                current_screen = QApplication.screenAt(global_pos)
+                if current_screen:
+                    screen_geo = current_screen.geometry()
+                    clamped_x = max(screen_geo.left(), min(target_pos.x(), screen_geo.right() - self.width()))
+                    clamped_y = max(screen_geo.top(), min(target_pos.y(), screen_geo.bottom() - self.height()))
+                    self.move(clamped_x, clamped_y)
+                else:
+                    self.move(target_pos)
+                return True
+            
+        elif event.type() == QEvent.Type.MouseButtonRelease:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self.drag_anchor = None
+
+        return super().eventFilter(watched, event)
+    
+    def execute_clamped_move(self, global_pos_pixel):
+        target_pos = global_pos_pixel - self.drag_anchor
+        current_screen = QApplication.screenAt(global_pos_pixel)
+
+        if current_screen:
+            screen_geo = current_screen.geometry()
+            clamped_x = max(screen_geo.left(), min(target_pos.x(), screen_geo.right() - self.width()))
+            clamped_y = max(screen_geo.top(), min(target_pos.y(), screen_geo.bottom() - self.height()))
+            self.move(clamped_x, clamped_y)
+        else:
+            self.move(target_pos)
 
     def show_context_options(self, global_pos):
         pass
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.drag_anchor = event.position().toPoint()
+            self.drag_anchor = event.globalPosition().toPoint() - self.pos()
         elif event.button() == Qt.MouseButton.RightButton:
             self.show_context_options(event.globalPosition().toPoint())
 

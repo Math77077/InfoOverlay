@@ -101,6 +101,11 @@ class AppController(BaseWindow):
         self.main_layout.addWidget(self.current_content)
         self.current_content.apply_settings(self)
 
+        self.register_child_events(self.current_content)
+
+        if hasattr(self.current_content, 'view') and self.current_content.view:
+            self.register_child_events(self.current_content.view.viewport())
+
         self.layout().activate()
 
         self.grip.raise_()
