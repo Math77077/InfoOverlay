@@ -1,5 +1,6 @@
 from PySide6.QtWidgets import QWidget, QSizeGrip, QVBoxLayout, QApplication
-from PySide6.QtCore import Qt, QEvent, QPoint
+from PySide6.QtCore import Qt, QEvent
+from PySide6.QtGui import QPainter, QColor
 
 class BaseWindow(QWidget):
     """
@@ -42,6 +43,11 @@ class BaseWindow(QWidget):
                 background-color: transparent;
             }}
         """)
+    def paintEvent(self, event):
+        """Provides a solid mouse tracking platform for Windows DWM while remaining completely colorless"""
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor(0, 0, 0, 1))
+
     def register_child_events(self, child_widget):
         if child_widget:
             child_widget.installEventFilter(self)
