@@ -1,14 +1,28 @@
+"""
+Module implementing high-frequency text ticker layers and interactive edit overlays.
+"""
+
 from PySide6.QtWidgets import QWidget, QLabel, QLineEdit, QColorDialog, QPushButton, QHBoxLayout, QVBoxLayout
-from PySide6.QtCore import Qt, QTimer, QRect
-from PySide6.QtGui import QFont, QPainter, QColor
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QFont, QPainter, QColor, QPaintEvent, QResizeEvent, QMouseEvent
 
 class TextEditHUB(QWidget):
     """
-    Dedicated transaction configuration HUD.
-    Renders an isolated backdrop and uses layout managers to remain
-    completely responsive to window resizing.
+    Dedicated transaction configuration HUD drawer layered above the text ticker.
+
+    The HUD allows the staff to change the displayed message on the window, and also its text color.
+
+    Attributes:
+        parent_overlay (ScrollingTextOverlay): Reference to the underlying ticker manager.
+        hud_layout (QVBoxLayout): Main vertical layout engine holding user interface rows.
+        header_label (QLabel): Section header guiding text input.
+        input_row_layout (QHBoxLayout): Horizontal field alignment mapping text inputs alongside color triggers.
+        text_input (QLineEdit): Interactive text entry box mapping current announcements.
+        color_btn (QPushButton): Graphical button launching native desktop color selection fields.
     """
-    def __init__(self, parent_overlay):
+
+    def __init__(self, parent_overlay: QWidget) -> None:
+        """Initializes structural inputs, fields, and custom element design properties."""
         super().__init__(parent_overlay)
         self.parent_overlay = parent_overlay
 
@@ -81,47 +95,69 @@ class TextEditHUB(QWidget):
 
         self.text_input.setFocus()
 
-    def change_text_color(self):
+    def change_text_color(self) -> None:
+        """Launches a native OS color picker dialog to alter layout presentations."""
         chosen_color = QColorDialog.getColor()
         if chosen_color.isValid():
             self.parent_overlay.current_color = chosen_color.name()
             self.parent_overlay.update_label_style()
 
-    def save_and_close(self):
+    def save_and_close(self) -> None:
+        """Applies updated text inputs back to the parent canvas and safely drops the HUD context."""
         self.parent_overlay.label.setText(self.text_input.text())
         self.parent_overlay.close_edit_hud()
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QPaintEvent) -> None:
+        """Renders an isolated translucent backdrop panel blocking out distraction shapes."""
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(15, 15, 20, 200))
 
 class ScrollingTextOverlay(QWidget):
     """
     High-Frequency Presentation Engine.
-    Handles nothing but running the ticker animation and layout geometry tracking.
-    """
-    def __init__(self, initial_width):
-        super().__init__()
-        self.x_pos = initial_width
-        self.current_color = "white"
-        self.active_hud = None
+    
+    Handles continuous ticker translations, bounds detection wrapping, and responsive sizing layers.
 
-        # DISPLAY TEXT ELEMENT PLACEHOLDER
+    Attributes:
+        x_pos (int): Horizontal pixel tracking coordinate mapping text position offsets.
+        current_color (str): Current hex color configuration mapping text display fills.
+        active_hud (TextEditHUB | None): Active overlay tracking configuration menu states.
+        label (QLabel): Underlying presentation graphic object displaying the string.
+        timer (QTimer): Micro-interval trigger loop maintaning smooth animation ticks.
+    """
+
+    def __init__(self, initial_width: int) -> None:
+        """Initializes internal variables, positions labels, and runs ticker clocks."""
+        super().__init__()
+        self.x_pos: int = initial_width
+        self.current_color: str = "white"
+        self.active_hud: TextEditHUB | None = None
+
+        # Display Text Element Placeholder
         self.label = QLabel("Texto de Exemplo Informativo", self)
         self.update_label_style()
 
-        # ANIMATION TIMER
+        # Animation Timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.update_position)
         self.timer.start(20)
 
-    def apply_settings(self, parent_window):
+    def apply_settings(self, parent_window: QWidget) -> None:
+        """Strips out border parameters from structural wrappers."""
         parent_window.setStyleSheet("background: transparent; border: none;")
 
-    def update_label_style(self):
+    def update_label_style(self) -> None:
+        """Synchronizes color variables with the current active style sheets."""
         self.label.setStyleSheet(f"color: {self.current_color}; background: transparent;")
 
-    def update_position(self):
+    def update_position(self) -> None:
+        """
+        Updates rendering positions and manages continuous coordinate wrap cycles.
+        
+        Every 20 milliseconds, the QTimer updates. While it updates if decrements the self.x_pos coordinate by 2 pixels.
+        Once the text has scrolled completely past the screen's left edge (-self.label.width()), it snaps back to the absolute
+        right side (self.width()), resetting the continuous broadcast loop.
+        """
         self.x_pos -= 2
         if self.x_pos < -self.label.width():
             self.x_pos = self.width()
@@ -129,31 +165,42 @@ class ScrollingTextOverlay(QWidget):
         vertical_center = (self.height() - self.label.height()) // 2
         self.label.move(self.x_pos, vertical_center)
     
-    def resizeEvent(self, event):
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        """Recalculates proportional structural components during frame transformations."""
         super().resizeEvent(event)
         self.adjust_font_size()
 
         if self.active_hud:
             self.active_hud.setGeometry(self.rect())
 
-    def adjust_font_size(self):
+    def adjust_font_size(self) -> None:
+        """
+        Adjusts the layout typography dynamically based on window proportions.
+
+        Everytime a resizeEvent hits the application, the engine samples the running widget height,
+        then scales the pixel size of the font to exactly 70% of the view window. Right after, it recalculates
+        bounding boxes using self.label.adjustSize()
+        """
         font = QFont("Arial")
         font.setPixelSize(int(self.height() * 0.7))
         self.label.setFont(font)
         self.label.adjustSize()
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        """Captures mouse double clicks to activate configuration layers."""
         if not self.active_hud:
             self.open_edit_hud()
 
-    def open_edit_hud(self):
+    def open_edit_hud(self) -> None:
+        """Halts running ticker engines and surfaces configuration management inputs."""
         self.timer.stop()
         self.label.hide()
 
         self.active_hud = TextEditHUB(self)
         self.active_hud.show()
 
-    def close_edit_hud(self):
+    def close_edit_hud(self) -> None:
+        """Flushes temporary configuration frames out of memory and resumes ticker updates."""
         if self.active_hud:
             self.active_hud.deleteLater()
             self.active_hud = None
