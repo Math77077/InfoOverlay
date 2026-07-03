@@ -1,11 +1,18 @@
+"""
+Main execution entry point coordinating polymorphic layout switches and context menus.
+"""
+
 import sys
 import os
 import platform
+from typing import Type, Any
+
+# Force X11/xcb backend initialization exclusively under Linux environments
 if platform.system() == "Linux":
     os.environ["QT_QPA_PLATFORM"] = "xcb"
 
-from PySide6.QtWidgets import QApplication, QMenu
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
+from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QAction
 
 from asset_service import AssetService
@@ -17,17 +24,24 @@ from overlays.preview_overlay import PreviewOverlay
 
 class AppController(BaseWindow):
     """
-    Inherits from BaseWindow.
-    Injects the specific context menu and wires up the switching of layout content.
+    Core orchestrator managing localized healthcare interface switching workflows.
+
+    Extends the clamped canvas behaviors of BaseWindow to inject custom dark-themed
+    user options context menus and swap multi-media views seamlessly without memory leaks.
+
+    Attributes:
+        asset_service (AssetService): Shared filesystem tracking layer instance.
+        current_content (QWidget | None): Running overlay media presentation view.
+        main_menu (QMenu): Context-triggered mouse control options menu canvas.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initializes shared memory caches, builds layout paths, and loads default preview guides."""
         self.asset_service = AssetService()
         super().__init__(self.asset_service)
-        self.current_content = None
-        self.asset_service = AssetService()
+        self.current_content: QWidget | None = None
 
-        # BUILD CONTROLLER INTERFACE
+        # Build Controller Menu
         self.main_menu = QMenu(self)
         self.main_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setup_context_menu()
@@ -55,13 +69,15 @@ class AppController(BaseWindow):
         }    
         """)
 
-        # DEFAULT PREVIEW MODE
+        # Default Presentation Layer
         self.switch_mode(PreviewOverlay, self.asset_service)
     
-    def show_context_options(self, global_pos):
+    def show_context_options(self, global_pos: QPoint) -> None:
+        """Surfaces the dark-themed user options menu layout at the current cursor point."""
         self.main_menu.exec(global_pos)
 
-    def setup_context_menu(self):
+    def setup_context_menu(self) -> None:
+        """Constructs interactive application action items and binds layout state actions."""
         new_window_action = QAction("Nova Janela", self)
         new_window_action.triggered.connect(self.spawn_new_window)
         self.main_menu.addAction(new_window_action)
@@ -86,7 +102,14 @@ class AppController(BaseWindow):
         exit_action.triggered.connect(self.close)
         self.main_menu.addAction(exit_action)
 
-    def clear_current_content(self):
+    def clear_current_content(self) -> None:
+        """
+        Deconstructs active presentation layers and releases underlying hardware hooks.
+
+        Checks for running multimedia instances to stop audio/video decoding threads
+        before unlinking the widget layout. Schedules structural components for deferred
+        heap allocation disposal via deleteLater to completely prevent memory leaks.
+        """
         if self.current_content:
             if hasattr(self.current_content, 'stop_media'):
                 self.current_content.stop_media()
@@ -95,7 +118,19 @@ class AppController(BaseWindow):
             self.current_content.deleteLater()
             self.current_content = None
 
-    def switch_mode(self, overlay_class, *args):
+    def switch_mode(self, overlay_class: Type[QWidget], *args: Any) -> None:
+        """
+        Swaps the operational media display engine using a polymorphic strategy pattern.
+
+        Clears existing layouts, constructs the incoming display widget, attaches it
+        to the layout stack, and applies custom style rules. Installs tracking filters
+        on nested components-specifically targeting graphic view viewports-to ensure
+        cursor dragging operations pass seamlessly back to the base frame.
+
+        Args:
+            overlay_class (Type[QWidget]): Meta-class reference of the component to mount.
+            *args (Any): Variable length argument list forwarded directly to the overlay constructor.
+        """
         self.clear_current_content()
         self.current_content = overlay_class(*args)
         self.main_layout.addWidget(self.current_content)
@@ -111,7 +146,13 @@ class AppController(BaseWindow):
         self.grip.raise_()
         self.grip.update()
 
-    def spawn_new_window(self):
+    def spawn_new_window(self) -> None:
+        """
+        Instantiates a standalone, concurrent display layout engine on the monitor space.
+
+        Leverages dependency injection to pass the existing single-source AssetService cache
+        to the child window, safely avoiding redundant disk reads and file I/O thread blocking.
+        """
         new_window = AppController()
         new_window.asset_service = self.asset_service
         self.child_windows.append(new_window)
