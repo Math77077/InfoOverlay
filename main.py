@@ -1,4 +1,4 @@
-## @mainpage UBS Digital Signage System
+## @mainpage InfoOverlay System
 #
 # @section intro_sec Introduction
 # This system provides a portable, hardware-accelerated digital signage solution 
