@@ -65,3 +65,28 @@ jobs:
           name: Portable_Windows_Build
           path: UBS_Signage_Portable_Windows.zip
           retention-days: 7
+
+  deploy-docs:
+      name: Compile and Publish Doxygen Reference Manual
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write 
+      steps:
+        - name: Checkout Repository Code
+          uses: actions/checkout@v4
+
+        - name: Install Doxygen and Extension Parsers
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y doxygen graphviz
+            pip install doxypypy
+
+        - name: Run Doxygen Compiler Execution
+          run: |
+            doxygen Doxyfile
+
+        - name: Deploy Compiled HTML to GitHub Pages
+          uses: peaceiris/actions-gh-pages@v4
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            publish_dir: ./docs/html

@@ -1,0 +1,21 @@
+PROJECT_NAME           = "UBS Digital Signage"
+PROJECT_NUMBER         = "1.0.0"
+OUTPUT_DIRECTORY       = "docs"
+OUTPUT_LANGUAGE        = English
+
+EXTENSION_MAPPING      = py=Python
+INPUT                  = . overlays/
+FILE_PATTERNS          = *.py
+RECURSIVE              = YES
+EXCLUDE                = venv/ .git/ dist/ build/
+
+FILTER_PATTERNS        = "*.py=doxypypy -a -c"
+FILTER_SOURCE_FILES    = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_COLORSTYLE_HUE    = 210
+HTML_COLORSTYLE_SAT    = 100
+HTML_COLORSTYLE_LIGHT  = 30
+
+GENERATE_LATEX         = NO

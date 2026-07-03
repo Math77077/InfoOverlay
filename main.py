@@ -1,3 +1,14 @@
+## @mainpage UBS Digital Signage System
+#
+# @section intro_sec Introduction
+# This system provides a portable, hardware-accelerated digital signage solution 
+# designed for public health clinic (UBS) environments.
+#
+# @section features_sec Key Architecture Layouts
+# - **Polymorphic Media Engines**: Swaps between Video, Image, and Text tickers seamlessly.
+# - **Dynamic Aspect Calculations**: Auto-detects layout configurations for vertical and horizontal screens.
+# - **Zero-Allocation Footprint**: Prevents system memory leaks over prolonged operational shifts.
+
 """
 Main execution entry point coordinating polymorphic layout switches and context menus.
 """

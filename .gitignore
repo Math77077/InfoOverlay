@@ -11,3 +11,6 @@ resources/images/*.png
 resources/images/*.jpg
 resources/videos/*.mp4
 resources/images/*.jpegs
+
+# Documentation Ouput
+docs/html/
