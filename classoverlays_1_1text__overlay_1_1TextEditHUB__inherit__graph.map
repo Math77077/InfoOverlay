@@ -1,0 +1,5 @@
+<map id="overlays.text_overlay.TextEditHUB" name="overlays.text_overlay.TextEditHUB">
+<area shape="rect" id="Node000001" title="Dedicated transaction configuration HUD drawer layered above the text ticker." alt="" coords="5,79,199,119"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="63,5,141,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,44,105,79,99,79,99,44"/>
+</map>

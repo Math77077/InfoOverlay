@@ -1,0 +1,5 @@
+<map id="overlays.video_overlay.VideoOverlay" name="overlays.video_overlay.VideoOverlay">
+<area shape="rect" id="Node000001" title="Hardware&#45;accelerated rendering container managing localized video rotation loops." alt="" coords="5,79,219,119"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="73,5,151,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,44,115,79,109,79,109,44"/>
+</map>

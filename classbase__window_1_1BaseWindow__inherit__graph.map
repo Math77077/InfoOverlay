@@ -1,0 +1,7 @@
+<map id="base_window.BaseWindow" name="base_window.BaseWindow">
+<area shape="rect" id="Node000001" title="Base architectural frame for managing frameless windows in a healthcare clinic layout." alt="" coords="5,79,203,104"/>
+<area shape="rect" id="Node000003" href="$classmain_1_1AppController.html" title="Core orchestrator managing localized healthcare interface switching workflows." alt="" coords="30,152,178,177"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="107,118,107,152,101,152,101,118"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="65,5,143,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,44,107,79,101,79,101,44"/>
+</map>
