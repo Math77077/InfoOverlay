@@ -96,11 +96,31 @@ class TextEditHUB(QWidget):
         self.text_input.setFocus()
 
     def change_text_color(self) -> None:
-        """Launches a native OS color picker dialog to alter layout presentations."""
-        chosen_color = QColorDialog.getColor()
-        if chosen_color.isValid():
-            self.parent_overlay.current_color = chosen_color.name()
-            self.parent_overlay.update_label_style()
+        """
+        Launches the color picker dialog while temporarily disabling the parent 
+        window's always-on-top behavior to prevent permanent OS-level stacking locks.
+        """
+        root_window = self.window()
+        
+        if root_window:
+            root_window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, False)
+            root_window.show() 
+
+        dialog = QColorDialog(self)
+        dialog.setWindowTitle("Selecione a Cor do Letreiro")
+        dialog.setCurrentColor(QColor(self.parent_overlay.current_color))
+        
+        dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
+
+        if dialog.exec() == QColorDialog.DialogCode.Accepted:
+            chosen_color = dialog.selectedColor()
+            if chosen_color.isValid():
+                self.parent_overlay.current_color = chosen_color.name()
+                self.parent_overlay.update_label_style()
+
+        if root_window:
+            root_window.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, True)
+            root_window.show()
 
     def save_and_close(self) -> None:
         """Applies updated text inputs back to the parent canvas and safely drops the HUD context."""
