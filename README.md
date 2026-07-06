@@ -21,7 +21,9 @@ This software suite is engineered to solve a distinct public infrastructure chal
 
 ```text
 ├── .github/workflows/
-│   └── build.yml             # Automated CI/CD (Windows Bundle + PDF + Doxygen Compiler)
+│   └── build.yml             # Automated CI/CD (Windows Bundle + Doxygen Compiler)
+├── scripts/
+│   └── generate_manual.py    # Standalone script converting Markdown to production PDF
 ├── app_assets/               # Embedded UI vector graphical assets (frozen into binary)
 ├── overlays/                 # Polymorphic Presentation Media Subsystem
 │   ├── __init__.py
@@ -76,7 +78,7 @@ The included GitHub Actions pipeline (`.github/workflows/build.yml`) automates y
  ├── 🪟 Job 1: Windows Compilation Pipeline
  │    ├── Environment Cache Handshake (requirements.txt hashing)
  │    ├── PyInstaller Module Engine Compilation (Onedir Configuration)
- │    ├── Inline Python Markdown-to-PDF User Guide Generation
+ │    ├── Decoupled Python Markdown-to-PDF User Guide Generation
  │    └── SmartScreen Workaround (Root Launcher 'Iniciar.bat' Structuring)
  └── 🐧 Job 2: Documentation Deployment Pipeline
       └── Compiles Doxygen Python Docstrings ──> Deploys to Live GitHub Pages Site
@@ -125,6 +127,14 @@ doxygen Doxyfile
 ```
 
 Open `docs/html/index.html` in any browser to review structural interaction diagrams and class definitions.
+
+### 4. Generate Local User Manual PDF
+
+To test and compile the user manual document locally using the same engine as the CI/CD workflow, ensure you have `markdown` and `xhtml2pdf` installed, then execute:
+
+```bash
+python scripts/generate_manual.py
+```
 
 ---
 
