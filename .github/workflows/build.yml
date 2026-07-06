@@ -145,7 +145,7 @@ jobs:
           with open('dist/Manual_do_Usuario.pdf', 'wb') as f_out:
               pisa.CreatePDF(html_content, dest=f_out)
           "
-        shell: powershell
+        shell: cmd
 
       - name: Pack into Portable ZIP Archive
         run: |
