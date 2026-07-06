@@ -55,7 +55,7 @@ jobs:
 
       - name: Compile USER_MANUAL.md to Production PDF
         run: |
-          python -c "
+          cat << 'EOF' > generate_pdf.py
           import markdown
           from xhtml2pdf import pisa
 
@@ -144,8 +144,10 @@ jobs:
           
           with open('dist/Manual_do_Usuario.pdf', 'wb') as f_out:
               pisa.CreatePDF(html_content, dest=f_out)
-          "
-        shell: cmd
+          EOF
+          
+          python generate_pdf.py
+        shell: bash
 
       - name: Pack into Portable ZIP Archive
         run: |
