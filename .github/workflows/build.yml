@@ -62,19 +62,24 @@ jobs:
           with open('USER_MANUAL.md', 'r', encoding='utf-8') as f:
               md_content = f.read()
 
+          # Strict ASCII normalization to protect the xhtml2pdf engine font engine
           replacements = {
               '📂': '[Pasta]',
               '📄': '[Arq]',
               '⚙️': '[Exec]',
               '⚠️': 'ATENÇÃO:',
               '🚫': 'AVISO:',
-              '──': '--',
               '├──': '|--',
-              '└──': '|__'
+              '└──': '|__',
+              '──': '--',
+              '│': '|',
+              '├': '|',
+              '└': '|',
+              '─': '-'
           }
 
-          for emoji, text in replacements.items():
-              md_content = md_content.replace(emoji, text)
+          for unicode_char, ascii_text in replacements.items():
+              md_content = md_content.replace(unicode_char, ascii_text)
           
           md_html = markdown.markdown(md_content, extensions=['extra'])
           
