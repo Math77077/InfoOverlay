@@ -1,0 +1,95 @@
+name: Build InfoOverlay Distribution Bundle
+
+on:
+  push:
+    branches:
+      - 'main'
+      - 'dev'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - 'main'
+      - 'dev'
+
+jobs:
+  build-windows:
+    name: Compile Application for Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache Pip Packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Core Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6 shiboken6 pyinstaller xhtml2pdf markdown
+
+      - name: Run PyInstaller Compiler
+        run: |
+          pyinstaller --noconsole --name="InfoOverlay" --add-data "app_assets;app_assets" main.py
+
+      - name: Structuring Runtime Folders and SmartScreen Patch
+        run: |
+          # Create reliable runtime resource folders expected by AssetService
+          New-Item -ItemType Directory -Force -Path "dist/InfoOverlay/resources/images"
+          New-Item -ItemType Directory -Force -Path "dist/InfoOverlay/resources/videos"
+          
+          # Generate a root-level Batch launcher script to bypass direct SmartScreen binary blocks
+          $BatContent = "@echo off`nstart `"`" `"%~dp0InfoOverlay\InfoOverlay.exe`""
+          Out-File -FilePath "dist/Iniciar.bat" -InputObject $BatContent -Encoding ascii
+        shell: powershell
+
+      - name: Compile USER_MANUAL.md to Production PDF
+        run: python scripts/generate_manual.py
+
+      - name: Pack into Portable ZIP Archive
+        run: |
+          # Compress from the root of the dist directory to include the launcher
+          Compress-Archive -Path "dist/*" -DestinationPath "InfoOverlay_Distribution.zip"
+        shell: powershell
+
+      - name: Upload Finished Deployment Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: InfoOverlay_Distribution
+          path: InfoOverlay_Distribution.zip
+          retention-days: 7
+
+  deploy-docs:
+      name: Compile and Publish Doxygen Reference Manual
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write 
+      steps:
+        - name: Checkout Repository Code
+          uses: actions/checkout@v4
+
+        - name: Install Doxygen and Extension Parsers
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y doxygen graphviz
+            pip install doxypypy
+
+        - name: Run Doxygen Compiler Execution
+          run: |
+            doxygen Doxyfile
+
+        - name: Deploy Compiled HTML to GitHub Pages
+          uses: peaceiris/actions-gh-pages@v4
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            publish_dir: ./docs/html

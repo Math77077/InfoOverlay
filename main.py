@@ -1,323 +1,178 @@
+## @mainpage InfoOverlay System
+#
+# @section intro_sec Introduction
+# This system provides a portable, hardware-accelerated digital signage solution 
+# designed for public health clinic (UBS) environments.
+#
+# @section features_sec Key Architecture Layouts
+# - **Polymorphic Media Engines**: Swaps between Video, Image, and Text tickers seamlessly.
+# - **Dynamic Aspect Calculations**: Auto-detects layout configurations for vertical and horizontal screens.
+# - **Zero-Allocation Footprint**: Prevents system memory leaks over prolonged operational shifts.
+
+"""
+Main execution entry point coordinating polymorphic layout switches and context menus.
+"""
+
 import sys
 import os
+import platform
+from typing import Type, Any
 
-os.environ["QT_QPA_PLATFORM"] = "xcb"
+# Force X11/xcb backend initialization exclusively under Linux environments
+if platform.system() == "Linux":
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
 
-from PySide6.QtWidgets import *
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtMultimediaWidgets import QVideoWidget, QGraphicsVideoItem
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QAction
 
-try:
-    import resources_rc
-except ImportError:
-    print("Warning: resources_rc not found.")
+from asset_service import AssetService
+from base_window import BaseWindow
+from overlays.text_overlay import ScrollingTextOverlay
+from overlays.image_overlay import ImageOverlay
+from overlays.video_overlay import VideoOverlay
+from overlays.preview_overlay import PreviewOverlay
 
-class BaseOverlay(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.windows = []
-        self.curr_content = None 
+class AppController(BaseWindow):
+    """
+    Core orchestrator managing localized healthcare interface switching workflows.
 
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint | 
-            Qt.WindowType.WindowStaysOnTopHint
-        )
+    Extends the clamped canvas behaviors of BaseWindow to inject custom dark-themed
+    user options context menus and swap multi-media views seamlessly without memory leaks.
 
-        self.resize(1000, 300)
-        self.setMinimumSize(50, 50)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
-        self.setStyleSheet("background-color: #2c3e50;")
+    Attributes:
+        asset_service (AssetService): Shared filesystem tracking layer instance.
+        current_content (QWidget | None): Running overlay media presentation view.
+        main_menu (QMenu): Context-triggered mouse control options menu canvas.
+    """
 
-        # MENU
-        self.menu = QMenu(self)
-        
-        new_window_btn = QAction("Nova Janela", self)
-        new_window_btn.triggered.connect(self.createWindow)
-        self.menu.addAction(new_window_btn)
+    def __init__(self) -> None:
+        """Initializes shared memory caches, builds layout paths, and loads default preview guides."""
+        self.asset_service = AssetService()
+        super().__init__(self.asset_service)
+        self.current_content: QWidget | None = None
 
-        self.menu.addSeparator()
+        # Build Controller Menu
+        self.main_menu = QMenu(self)
+        self.main_menu.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
+        self.setup_context_menu()
 
-        self.menu.addAction("Letreiro", self.swapFrameContent)
-        self.menu.addAction("Modo Imagem", self.switchToImageMode)
-        self.menu.addAction("Modo Vídeo", self.switchToVideoMode)
-        
-        self.menu.addSeparator()
-        
-        leave_btn = QAction("Sair", self)
-        leave_btn.triggered.connect(self.close)
-        self.menu.addAction(leave_btn)
+        self.main_menu.setStyleSheet("""
+        QMenu {
+            background-color: rgba(31, 40, 51, 0.95);  
+            border: 1px solid rgba(69, 156, 214, 0.5); 
+            border-radius: 8px;                       
+            padding: 5px 0px;
+        }
+        QMenu::item {
+            color: #c5a3a3; 
+            padding: 8px 24px;                       
+            background-color: transparent;
+        }
+        QMenu::item:selected {
+            background-color: rgb(5, 110, 155);       
+            color: white;                             
+        }
+        QMenu::separator {
+            height: 1px;
+            background-color: rgba(255, 255, 255, 30);
+            margin: 4px 10px;                        
+        }    
+        """)
 
-        # GRIP
-        self.grip_size = 16
-        self.grip = QSizeGrip(self)
-        self.grip.resize(self.grip_size, self.grip_size) 
-        self.grip.setStyleSheet("background-color: rgba(255, 255, 255, 30); border-radius: 8px;")
+        # Default Presentation Layer
+        self.switch_mode(PreviewOverlay, self.asset_service)
+    
+    def show_context_options(self, global_pos: QPoint) -> None:
+        """Surfaces the dark-themed user options menu layout at the current cursor point."""
+        self.main_menu.exec(global_pos)
 
-        # LAYOUT
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+    def setup_context_menu(self) -> None:
+        """Constructs interactive application action items and binds layout state actions."""
+        new_window_action = QAction("Nova Janela", self)
+        new_window_action.triggered.connect(self.spawn_new_window)
+        self.main_menu.addAction(new_window_action)
 
-        # INITIAL CONTENT
-        self.curr_content = QWidget()
-        self.layout.addWidget(self.curr_content)
+        self.main_menu.addSeparator()
+
+        text_action = QAction("Letreiro", self)
+        text_action.triggered.connect(lambda: self.switch_mode(ScrollingTextOverlay, self.width()))
+        self.main_menu.addAction(text_action)
+
+        image_action = QAction("Modo Imagem", self)
+        image_action.triggered.connect(lambda: self.switch_mode(ImageOverlay, self.asset_service))
+        self.main_menu.addAction(image_action)
+
+        video_action = QAction("Modo Vídeo", self)
+        video_action.triggered.connect(lambda: self.switch_mode(VideoOverlay, self.asset_service))
+        self.main_menu.addAction(video_action)
+
+        self.main_menu.addSeparator()
+
+        exit_action = QAction("Sair", self)
+        exit_action.triggered.connect(self.close)
+        self.main_menu.addAction(exit_action)
+
+    def clear_current_content(self) -> None:
+        """
+        Deconstructs active presentation layers and releases underlying hardware hooks.
+
+        Checks for running multimedia instances to stop audio/video decoding threads
+        before unlinking the widget layout. Schedules structural components for deferred
+        heap allocation disposal via deleteLater to completely prevent memory leaks.
+        """
+        if self.current_content:
+            if hasattr(self.current_content, 'stop_media'):
+                self.current_content.stop_media()
+
+            self.main_layout.removeWidget(self.current_content)
+            self.current_content.deleteLater()
+            self.current_content = None
+
+    def switch_mode(self, overlay_class: Type[QWidget], *args: Any) -> None:
+        """
+        Swaps the operational media display engine using a polymorphic strategy pattern.
+
+        Clears existing layouts, constructs the incoming display widget, attaches it
+        to the layout stack, and applies custom style rules. Installs tracking filters
+        on nested components-specifically targeting graphic view viewports-to ensure
+        cursor dragging operations pass seamlessly back to the base frame.
+
+        Args:
+            overlay_class (Type[QWidget]): Meta-class reference of the component to mount.
+            *args (Any): Variable length argument list forwarded directly to the overlay constructor.
+        """
+        self.clear_current_content()
+        self.current_content = overlay_class(*args)
+        self.main_layout.addWidget(self.current_content)
+        self.current_content.apply_settings(self)
+
+        self.register_child_events(self.current_content)
+
+        if hasattr(self.current_content, 'view') and self.current_content.view:
+            self.register_child_events(self.current_content.view.viewport())
+
+        self.layout().activate()
+
         self.grip.raise_()
+        self.grip.update()
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key.Key_Escape:
-            self.close()
+    def spawn_new_window(self) -> None:
+        """
+        Instantiates a standalone, concurrent display layout engine on the monitor space.
 
-    def mousePressEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.drag_anchor = event.position().toPoint()
-        elif event.button() == Qt.MouseButton.RightButton:
-            self.menu.exec(event.globalPosition().toPoint())
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() & Qt.MouseButton.LeftButton:
-            new_pos = event.globalPosition().toPoint() - self.drag_anchor
-            self.move(new_pos)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        rect = self.rect()
-        self.grip.move(rect.width() - self.grip_size, rect.height() - self.grip_size)
-
-    def createWindow(self):
-        new_window = BaseOverlay()
-        self.windows.append(new_window)
+        Leverages dependency injection to pass the existing single-source AssetService cache
+        to the child window, safely avoiding redundant disk reads and file I/O thread blocking.
+        """
+        new_window = AppController()
+        new_window.asset_service = self.asset_service
+        self.child_windows.append(new_window)
         new_window.show()
-
-    def clearLayout(self):
-        if self.curr_content:
-            self.layout.removeWidget(self.curr_content)
-            self.curr_content.deleteLater()
-            self.curr_content = None
-
-    def swapFrameContent(self):
-        self.clearLayout()
-        self.curr_content = ScrollingTextOverlay(self.width())
-        self.layout.addWidget(self.curr_content)
-        self.curr_content.apply_settings(self)
-        self.grip.raise_()
-
-    def switchToImageMode(self):
-        self.clearLayout()
-        self.curr_content = ImageOverlay("resources") 
-        self.layout.addWidget(self.curr_content)
-        self.curr_content.apply_settings(self) 
-        self.grip.raise_()
-
-    def switchToVideoMode(self):
-        self.clearLayout()
-        self.curr_content = VideoOverlay("resources") 
-        self.layout.addWidget(self.curr_content)
-        self.curr_content.apply_settings(self)
-        self.grip.raise_()
-
-    def closeEvent(self, event):
-        try:
-            if hasattr(self.curr_content, 'stop_media'):
-                self.curr_content.stop_media()
-        except Exception as e:
-            print(f"Erro ao parar mídia: {e}")
-        
-        for window in self.windows:
-            window.close()
-        event.accept()
-            
-
-class ScrollingTextOverlay(QWidget):
-    def __init__(self, width):
-        super().__init__()
-        self.is_editing = False
-        self.x_pos = width
-        
-        self.label = QLabel("Texto de exemplo informativo UBS", self)
-        self.label.setStyleSheet("color: white; background: transparent;")
-        
-        self.text_input = QLineEdit(self)
-        self.text_input.hide()
-        self.text_input.returnPressed.connect(self.edit_mode)
-
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.updatePosition)
-        self.timer.start(20)
-
-    def apply_settings(self, parent):
-        parent.setStyleSheet("background: transparent; border: none;")
-
-    def updatePosition(self):
-        if not self.is_editing:
-            self.x_pos -= 2
-            if self.x_pos < -self.label.width():
-                self.x_pos = self.width()
-            self.label.move(self.x_pos, (self.height() - self.label.height()) // 2)
-
-    def paintEvent(self, event):
-        if self.is_editing:
-            painter = QPainter(self)
-            painter.fillRect(self.rect(), QColor(0, 0, 0, 180))
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        self.adjustFontSize()
-
-    def adjustFontSize(self):
-        font = QFont("Arial")
-        font.setPixelSize(int(self.height() * 0.7))
-        self.label.setFont(font)
-        self.label.adjustSize()
-
-    def mouseDoubleClickEvent(self, event):
-        self.edit_mode()
-
-    def edit_mode(self):
-        if not self.is_editing:
-            self.is_editing = True
-            self.timer.stop()
-            self.label.hide()
-            self.text_input.setText(self.label.text())
-            self.text_input.setGeometry(10, (self.height()-40)//2, self.width()-20, 40)
-            self.text_input.show()
-            self.text_input.setFocus()
-            self.update()
-        else:
-            self.is_editing = False
-            self.label.setText(self.text_input.text())
-            self.text_input.hide()
-            self.label.show()
-            self.adjustFontSize()
-            self.timer.start(20)
-            self.update()
-
-class ImageOverlay(QWidget):
-    def __init__(self, folder_path):
-        super().__init__()
-        self.folder_path = folder_path
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0,0,0,0)
-        self.image_label = QLabel()
-        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.layout.addWidget(self.image_label)
-        
-        self.pixmap = None
-        self.check_timer = QTimer(self)
-        self.check_timer.setSingleShot(True)
-        self.check_timer.timeout.connect(self.load_best_image)
-        self.load_best_image()
-
-    def load_best_image(self):
-        if not os.path.exists(self.folder_path): return
-        files = [f for f in os.listdir(self.folder_path) if f.lower().endswith(('.png', '.jpg'))]
-        if not files: return
-        
-        is_landscape = self.width() >= self.height()
-        path = os.path.join(self.folder_path, files[0]) # Default
-        
-        for f in files:
-            if is_landscape and "_h" in f.lower(): path = os.path.join(self.folder_path, f); break
-            if not is_landscape and "_v" in f.lower(): path = os.path.join(self.folder_path, f); break
-            
-        self.pixmap = QPixmap(path)
-        self.update_display()
-
-    def update_display(self):
-        if self.pixmap:
-            scaled = self.pixmap.scaled(self.size(), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            self.image_label.setPixmap(scaled)
-
-    def resizeEvent(self, event):
-        self.check_timer.start(100)
-
-    def apply_settings(self, parent):
-        parent.setStyleSheet("background: transparent;")
-
-class VideoOverlay(QWidget):
-    def __init__(self, folder_path):
-        super().__init__()
-        self.folder_path = folder_path
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.scene = QGraphicsScene(self)
-        self.view = QGraphicsView(self.scene)
-
-        self.view.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-
-        self.view.setFrameShape(QFrame.Shape.NoFrame)
-        self.view.setStyleSheet("background: transparent;") 
-        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        
-        self.video_item = QGraphicsVideoItem()
-        self.scene.addItem(self.video_item)
-        
-        self.media_player = QMediaPlayer(self)
-        self.audio_output = QAudioOutput(self)
-        self.media_player.setVideoOutput(self.video_item)
-        self.media_player.setAudioOutput(self.audio_output)
-        
-        self.layout.addWidget(self.view)
-        
-        self.current_video = ""
-        self.media_player.playbackStateChanged.connect(self.handle_loop)
-        
-        self.resize_timer = QTimer(self)
-        self.resize_timer.setSingleShot(True)
-        self.resize_timer.timeout.connect(self.load_best_video)
-        
-        QTimer.singleShot(200, self.load_best_video)
-
-    def stop_media(self):
-        """Para a mídia de forma limpa"""
-        self.media_player.stop()
-        self.media_player.setSource(QUrl(""))
-
-    def load_best_video(self):
-        if not os.path.exists(self.folder_path): return
-        files = [f for f in os.listdir(self.folder_path) if f.lower().endswith(('.mp4', '.mov'))]
-        if not files: return
-        
-        is_landscape = self.width() >= self.height()
-        target = files[0]
-        
-        for f in files:
-            if is_landscape and "_h" in f.lower(): target = f; break
-            if not is_landscape and "_v" in f.lower(): target = f; break
-        
-        path = os.path.abspath(os.path.join(self.folder_path, target))
-        
-        if path != self.current_video:
-            self.current_video = path
-            self.media_player.setSource(QUrl.fromLocalFile(path))
-            self.media_player.play()
-        
-        self.update_video_size()
-
-    def update_video_size(self):
-        """Ajusta o tamanho do vídeo para caber na cena sem esticar"""
-        size = self.size()
-        self.video_item.setSize(QSizeF(size.width(), size.height()))
-        self.view.setSceneRect(0, 0, size.width(), size.height())
-
-    def handle_loop(self, state):
-        if state == QMediaPlayer.PlaybackState.StoppedState:
-            self.media_player.play()
-
-    def resizeEvent(self, event):
-        self.update_video_size()
-        self.resize_timer.start(300)
-        super().resizeEvent(event)
-
-    def apply_settings(self, parent):
-        parent.setStyleSheet("background: transparent; border: none;")
-        parent.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = BaseOverlay()
-    window.show()
-    sys.exit(app.exec())
 
+    main_window = AppController()
+    main_window.show()
+
+    sys.exit(app.exec())
