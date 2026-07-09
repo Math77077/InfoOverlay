@@ -17,13 +17,13 @@ Para manter a separação de responsabilidades, as instruções deste manual sã
 O sistema foi desenhado sob o princípio de **implantação portátil de custo zero**, não necessitando de instaladores complexos ou privilégios de administrador de rede para rodar.
 
 ### Estrutura de Diretórios e Ciclo de Vida do Executável
-Ao descompactar o arquivo `UBS_Signage_Portable_Windows.zip`, a seguinte topologia de arquivos será apresentada:
+Ao descompactar o arquivo `InfoOverlay.zip`, a seguinte topologia de arquivos será apresentada:
 
 ```text
-📂 UBS_Signage_Portable/
+📂 InfoOverlay_Distribution/
 ├── 📄 Iniciar.bat                <── INICIALIZADOR PRINCIPAL
-└── 📂 UBS_Signage/                <── Binários Ocultos do Sistema
-    ├── ⚙️ UBS_Signage.exe
+└── 📂 InfoOverlay/                <── Binários Ocultos do Sistema
+    ├── ⚙️ InfoOverlay.exe
     ├── 📂 app_assets/             <── Recursos Visuais Internos (Ícones/Grip)
     └── 📂 resources/              <── CAMINHO DE MAPEAMENTO EXTERNO
         ├── 📂 images/             <── Inserção de Campanhas de Imagem (.png, .jpg)
@@ -35,9 +35,10 @@ Ao descompactar o arquivo `UBS_Signage_Portable_Windows.zip`, a seguinte topolog
 
 ### Inicialização Segura
 
-Para evitar que o Windows bloqueie o programa em computadores institucionais devido à falta de certificados digitais caros, **nunca execute o arquivo `UBS_Signage.exe` diretamente**.
+Para evitar que o Windows bloqueie o programa em computadores institucionais devido à falta de certificados digitais caros, **nunca execute o arquivo `InfoOverlay.exe` diretamente**.
 
-* Sempre instrua a equipe local a dar duplo clique no arquivo **`Iniciar.bat`** localizado na raiz. Isso inicializa o processo por meio de um script local, eliminando o aviso de segurança do Windows.
+* Sempre instrua a equipe local a dar duplo clique no arquivo **`Iniciar.bat`** localizado na raiz da pasta compactada. 
+* *Nota de Operação:* Ao iniciar pelo `.bat`, o Windows ainda poderá exibir uma janela de confirmação de execução ou abrir rapidamente uma tela preta de terminal. Esse comportamento é normal, muito mais intuitivo para o usuário final e confirma que o bloqueio do SmartScreen foi evitado com sucesso.
 
 ---
 

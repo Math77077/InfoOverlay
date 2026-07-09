@@ -1,6 +1,6 @@
 # InfoOverlay
 
-[![Build Portable Windows App](https://github.com/Math77077/InfoOverlay/actions/workflows/build.yml/badge.svg)](https://github.com/Math77077/InfoOverlay/actions)
+[![Build InfoOverlay Distribution Bundle](https://github.com/Math77077/InfoOverlay/actions/workflows/build.yml/badge.svg)](https://github.com/Math77077/InfoOverlay/actions)
 [![Documentation](https://img.shields.io/badge/docs-doxygen-blue.svg)](https://Math77077.github.io/InfoOverlay/)
 
 > A lightweight, frameless, and transparent multi-window overlay system for digital signage, supporting scrolling text, images, and video with smart orientation detection. Specifically engineered to run seamlessly within the administrative constraints of Brazilian Public Health Clinics (**Unidades Básicas de Saúde - UBS**).
@@ -21,7 +21,7 @@ This software suite is engineered to solve a distinct public infrastructure chal
 
 ```text
 ├── .github/workflows/
-│   └── build.yml             # Automated CI/CD (Windows Bundle + Doxygen Compiler)
+│   └── build.yml             # Automated CI/CD (Application Bundle + Doxygen Compiler)
 ├── scripts/
 │   └── generate_manual.py    # Standalone script converting Markdown to production PDF
 ├── app_assets/               # Embedded UI vector graphical assets (frozen into binary)
@@ -75,7 +75,7 @@ The included GitHub Actions pipeline (`.github/workflows/build.yml`) automates y
 
 ```text
 ⚙️ GitHub Actions Workflow Pipeline
- ├── 🪟 Job 1: Windows Compilation Pipeline
+ ├── 🪟 Job 1: Compile Application Bundle
  │    ├── Environment Cache Handshake (requirements.txt hashing)
  │    ├── PyInstaller Module Engine Compilation (Onedir Configuration)
  │    ├── Decoupled Python Markdown-to-PDF User Guide Generation
@@ -85,13 +85,13 @@ The included GitHub Actions pipeline (`.github/workflows/build.yml`) automates y
 
 ```
 
-### Windows SmartScreen Blocker
+### Windows SmartScreen Mitigation
 
 Uncertified binaries often trigger aggressive Windows SmartScreen security alerts in public institutions. To prevent this, our pipeline automatically nests the compiled folder structure and structures a root-level script **`Iniciar.bat`**:
 
 ```batch
 @echo off
-start "" "%~dp0UBS_Signage\UBS_Signage.exe"
+start "" "%~dp0InfoOverlay\InfoOverlay.exe"
 
 ```
 

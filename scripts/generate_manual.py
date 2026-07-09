@@ -101,9 +101,8 @@ def main():
         print(f"Error: Input file '{INPUT_FILE}' not found.", file=sys.stderr)
         sys.exit(1)
         
-    # Get the target directory safely
     target_dir = os.path.dirname(OUTPUT_FILE)
-    if target_dir: # Only create if there's a valid directory string
+    if target_dir: 
         os.makedirs(target_dir, exist_ok=True)
 
     with open(INPUT_FILE, 'r', encoding='utf-8') as f:
@@ -112,7 +111,6 @@ def main():
     clean_md = normalize_markdown(md_content)
     md_html = markdown.markdown(clean_md, extensions=['extra'])
     
-    # FIXED: Clean injection targeted to structural token
     html_content = HTML_TEMPLATE.replace('[]', md_html)
     
     print("Compiling markdown to production PDF layout...")

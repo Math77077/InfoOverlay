@@ -1,4 +1,4 @@
-name: Build Portable Windows App
+name: Build InfoOverlay Distribution Bundle
 
 on:
   push:
@@ -40,16 +40,16 @@ jobs:
 
       - name: Run PyInstaller Compiler
         run: |
-          pyinstaller --noconsole --name="UBS_Signage" --add-data "app_assets;app_assets" main.py
+          pyinstaller --noconsole --name="InfoOverlay" --add-data "app_assets;app_assets" main.py
 
       - name: Structuring Runtime Folders and SmartScreen Patch
         run: |
           # Create reliable runtime resource folders expected by AssetService
-          New-Item -ItemType Directory -Force -Path "dist/UBS_Signage/resources/images"
-          New-Item -ItemType Directory -Force -Path "dist/UBS_Signage/resources/videos"
+          New-Item -ItemType Directory -Force -Path "dist/InfoOverlay/resources/images"
+          New-Item -ItemType Directory -Force -Path "dist/InfoOverlay/resources/videos"
           
           # Generate a root-level Batch launcher script to bypass direct SmartScreen binary blocks
-          $BatContent = "@echo off`nstart `"`" `"%~dp0UBS_Signage\UBS_Signage.exe`""
+          $BatContent = "@echo off`nstart `"`" `"%~dp0InfoOverlay\InfoOverlay.exe`""
           Out-File -FilePath "dist/Iniciar.bat" -InputObject $BatContent -Encoding ascii
         shell: powershell
 
@@ -59,14 +59,14 @@ jobs:
       - name: Pack into Portable ZIP Archive
         run: |
           # Compress from the root of the dist directory to include the launcher
-          Compress-Archive -Path "dist/*" -DestinationPath "UBS_Signage_Portable_Windows.zip"
+          Compress-Archive -Path "dist/*" -DestinationPath "InfoOverlay.zip"
         shell: powershell
 
       - name: Upload Finished Deployment Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Portable_Windows_Build
-          path: UBS_Signage_Portable_Windows.zip
+          name: InfoOverlay_Distribution
+          path: InfoOverlay.zip
           retention-days: 7
 
   deploy-docs:
