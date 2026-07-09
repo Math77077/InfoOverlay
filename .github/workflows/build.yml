@@ -59,14 +59,14 @@ jobs:
       - name: Pack into Portable ZIP Archive
         run: |
           # Compress from the root of the dist directory to include the launcher
-          Compress-Archive -Path "dist/*" -DestinationPath "InfoOverlay.zip"
+          Compress-Archive -Path "dist/*" -DestinationPath "InfoOverlay_Distribution.zip"
         shell: powershell
 
       - name: Upload Finished Deployment Artifact
         uses: actions/upload-artifact@v4
         with:
           name: InfoOverlay_Distribution
-          path: InfoOverlay.zip
+          path: InfoOverlay_Distribution.zip
           retention-days: 7
 
   deploy-docs:
